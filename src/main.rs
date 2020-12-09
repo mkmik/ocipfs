@@ -4,10 +4,7 @@
 extern crate rocket;
 
 use anyhow::Result;
-use rocket::http::ContentType;
-use rocket::request::Request;
-use rocket::response::{self, Redirect, Responder, Response};
-use std::io::Cursor;
+use rocket::response::{Redirect};
 use text_io::try_scan;
 
 const IPFS_GATEWAY: &str = "ipfs.io";
@@ -15,22 +12,21 @@ const EMPTY_OBJECT_DIGEST: &str =
     "sha256:bcd90c310ea94b930d370ca1a3996471a92beb68fdb39246b7172ac5f0679f88";
 const EMPTY_OBJECT_CID: &str = "QmSmwSKtijUZ7GSzso695rP8PRcRdjdJe7WVC2BdtX7Jt9";
 
-fn image_manifest_content_type() -> ContentType {
-    ContentType::new("application", "vnd.oci.image.manifest.v1+json")
-}
-
 #[get("/")]
 fn root() {}
 
-struct ManifestResponse {
-    sha: String,
-    size: i64,
-}
+#[derive(Responder)]
+#[response(content_type = "application/vnd.oci.image.manifest.v1+json")]
+struct ManifestResponder(String);
 
-impl<'r> Responder<'r> for ManifestResponse {
-    fn respond_to(self, _: &Request) -> response::Result<'r> {
-        let body = format!(
-            r#"{{
+#[get("/layer/<_repo>/manifests/<tag>")]
+fn manifests(_repo: String, tag: String) -> Result<ManifestResponder> {
+    let size: i64;
+    let sha: String;
+    try_scan!(tag.bytes() => "{}-{}", size, sha);
+
+    let body = format!(
+        r#"{{
   "schemaVersion": 2,
   "mediaType": "application/vnd.oci.image.manifest.v1+json",
   "config": {{
@@ -46,26 +42,10 @@ impl<'r> Responder<'r> for ManifestResponse {
     }}
   ]
 }}"#,
-            self.sha, self.size
-        );
-        Response::build()
-            .sized_body(Cursor::new(body))
-            .header(image_manifest_content_type())
-            .ok()
-    }
-}
-
-#[get("/layer/<repo>/manifests/<tag>")]
-fn manifests(repo: String, tag: String) -> Result<ManifestResponse> {
-    let size: i64;
-    let sha: String;
-    try_scan!(tag.bytes() => "{}-{}", size, sha);
-
-    println!(
-        "manifest repo={}, tag={}, size={}, sha={}!",
-        repo, tag, size, sha
+        sha, size
     );
-    Ok(ManifestResponse { sha, size })
+
+    Ok(ManifestResponder(body))
 }
 
 #[get("/layer/<repo>/blobs/<digest>")]
