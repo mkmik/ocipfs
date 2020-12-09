@@ -4,13 +4,14 @@
 extern crate rocket;
 
 use anyhow::Result;
-use rocket::response::{Redirect};
+use rocket::response::Redirect;
 use text_io::try_scan;
 
 const IPFS_GATEWAY: &str = "ipfs.io";
 const EMPTY_OBJECT_DIGEST: &str =
-    "sha256:bcd90c310ea94b930d370ca1a3996471a92beb68fdb39246b7172ac5f0679f88";
-const EMPTY_OBJECT_CID: &str = "QmSmwSKtijUZ7GSzso695rP8PRcRdjdJe7WVC2BdtX7Jt9";
+    "sha256:15d612984db0dead3f98670882d92203e2d9ce167bc87cf49cafbe465cb6e9f1";
+
+const ZEROS: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
 
 #[get("/")]
 fn root() {}
@@ -31,8 +32,8 @@ fn manifests(_repo: String, tag: String) -> Result<ManifestResponder> {
   "mediaType": "application/vnd.oci.image.manifest.v1+json",
   "config": {{
     "mediaType": "application/vnd.oci.image.config.v1+json",
-    "digest": "sha256:bcd90c310ea94b930d370ca1a3996471a92beb68fdb39246b7172ac5f0679f88",
-    "size": 123
+    "digest": "{}",
+    "size": 196
   }},
   "layers": [
     {{
@@ -42,23 +43,41 @@ fn manifests(_repo: String, tag: String) -> Result<ManifestResponder> {
     }}
   ]
 }}"#,
-        sha, size
+        EMPTY_OBJECT_DIGEST, sha, size
     );
 
     Ok(ManifestResponder(body))
 }
 
+#[derive(Responder)]
+enum BlobsResponder {
+    #[allow(dead_code)]
+    Config(String),
+    Redirect(Redirect),
+}
+
 #[get("/layer/<repo>/blobs/<digest>")]
-fn blobs(repo: String, digest: String) -> Redirect {
+fn blobs(repo: String, digest: String) -> BlobsResponder {
     println!("blob: repo={}, digest={}!", repo, digest);
 
-    let to = if digest == EMPTY_OBJECT_DIGEST {
-        EMPTY_OBJECT_CID.to_string()
+    if digest == ZEROS || digest == EMPTY_OBJECT_DIGEST {
+        BlobsResponder::Config(format!(
+            r#"{{
+    "architecture": "amd64",
+    "os": "linux",
+    "rootfs": {{
+        "type": "layers",
+        "diff_ids": ["sha256:e02ebdee01b51ceb76a06a45debfb962d6484728f4c348b9ca0c8a2309830ec6"]
+    }}
+}}
+"#
+        ))
     } else {
-        repo
-    };
-
-    Redirect::found(format!("https://{}/ipfs/{}", IPFS_GATEWAY, to))
+        BlobsResponder::Redirect(Redirect::found(format!(
+            "https://{}/ipfs/{}",
+            IPFS_GATEWAY, repo
+        )))
+    }
 }
 
 fn main() {
