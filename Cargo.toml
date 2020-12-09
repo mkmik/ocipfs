@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 rocket = "0.4.6"
+text_io = "0.1"
+anyhow = "1"
