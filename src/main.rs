@@ -3,31 +3,36 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::response::Redirect;
-use text_io::try_scan;
 use anyhow::Result;
+use rocket::http::ContentType;
+use rocket::request::Request;
+use rocket::response::{self, Redirect, Responder, Response};
+use std::io::Cursor;
+use text_io::try_scan;
 
 const IPFS_GATEWAY: &str = "ipfs.io";
 const EMPTY_OBJECT_DIGEST: &str =
-    "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a";
-const EMPTY_OBJECT_CID: &str = "QmbJWAESqCsf4RFCqEY7jecCashj8usXiyDNfKtZCwwzGb";
+    "sha256:bcd90c310ea94b930d370ca1a3996471a92beb68fdb39246b7172ac5f0679f88";
+const EMPTY_OBJECT_CID: &str = "QmSmwSKtijUZ7GSzso695rP8PRcRdjdJe7WVC2BdtX7Jt9";
 
 #[get("/")]
 fn root() {}
 
-#[get("/layer/<repo>/manifests/<tag>")]
-fn manifests(repo: String, tag: String) -> Result<String> {
-	let size: i64;
-	let sha: String;
-	try_scan!(tag.bytes() => "{}-{}", size, sha);
+struct ManifestResponse {
+    sha: String,
+    size: i64,
+}
 
-    println!("manifest repo={}, tag={}, size={}, sha={}!", repo, tag, size, sha);
-    Ok(format!(r#"{{
+impl<'r> Responder<'r> for ManifestResponse {
+    fn respond_to(self, _: &Request) -> response::Result<'r> {
+        let body = format!(
+            r#"{{
   "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
   "config": {{
-    "mediaType": "application/vnd.dummy.config.v1+json",
-    "digest": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-    "size": 2
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:bcd90c310ea94b930d370ca1a3996471a92beb68fdb39246b7172ac5f0679f88",
+    "size": 123
   }},
   "layers": [
     {{
@@ -36,7 +41,30 @@ fn manifests(repo: String, tag: String) -> Result<String> {
       "size": {}
     }}
   ]
-}}"#, sha, size))
+}}"#,
+            self.sha, self.size
+        );
+        Response::build()
+            .sized_body(Cursor::new(body))
+            .header(ContentType::new(
+                "application",
+                "vnd.oci.image.manifest.v1+json",
+            ))
+            .ok()
+    }
+}
+
+#[get("/layer/<repo>/manifests/<tag>")]
+fn manifests(repo: String, tag: String) -> Result<ManifestResponse> {
+    let size: i64;
+    let sha: String;
+    try_scan!(tag.bytes() => "{}-{}", size, sha);
+
+    println!(
+        "manifest repo={}, tag={}, size={}, sha={}!",
+        repo, tag, size, sha
+    );
+    Ok(ManifestResponse { sha, size })
 }
 
 #[get("/layer/<repo>/blobs/<digest>")]
