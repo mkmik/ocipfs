@@ -15,6 +15,10 @@ const EMPTY_OBJECT_DIGEST: &str =
     "sha256:bcd90c310ea94b930d370ca1a3996471a92beb68fdb39246b7172ac5f0679f88";
 const EMPTY_OBJECT_CID: &str = "QmSmwSKtijUZ7GSzso695rP8PRcRdjdJe7WVC2BdtX7Jt9";
 
+fn image_manifest_content_type() -> ContentType {
+    ContentType::new("application", "vnd.oci.image.manifest.v1+json")
+}
+
 #[get("/")]
 fn root() {}
 
@@ -46,10 +50,7 @@ impl<'r> Responder<'r> for ManifestResponse {
         );
         Response::build()
             .sized_body(Cursor::new(body))
-            .header(ContentType::new(
-                "application",
-                "vnd.oci.image.manifest.v1+json",
-            ))
+            .header(image_manifest_content_type())
             .ok()
     }
 }
