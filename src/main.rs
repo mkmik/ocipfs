@@ -1,5 +1,4 @@
 #![feature(proc_macro_hygiene, decl_macro)]
-#![allow(unused_imports)]
 
 #[macro_use]
 extern crate rocket;
@@ -7,17 +6,14 @@ extern crate rocket;
 use anyhow::Result;
 use count_write::CountWrite;
 use err_derive::Error;
-use reqwest::blocking;
 use rocket::response::Redirect;
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha2Digest, Sha256};
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::path::PathBuf;
-use text_io::try_scan;
 
 const IPFS_GATEWAY: &str = "ipfs.io";
 
@@ -225,7 +221,6 @@ struct Digest {
 }
 
 impl Digest {
-    #[allow(dead_code)]
     fn new<T: Serialize>(v: T) -> Result<Self> {
         let mut hasher = Sha256::new();
         let size = {
@@ -256,7 +251,6 @@ fn main() {
 }
 
 #[cfg(test)]
-#[allow(unused_variables)]
 mod test {
     use super::rocket;
     use rocket::http::Status;
