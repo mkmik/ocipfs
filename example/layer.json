@@ -1,0 +1,12 @@
+{
+  "mediaType": "application/vnd.ocipfs.layer.manifest.v1+json",
+  "layer": {
+    "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+    "digest": "sha256:cfb9359acc6d98d593d724bb9f0fd4b12dd12688eb44ee9ac391fb3fde6c0415",
+    "size": 168,
+    "annotations": {
+      "io.ocipfs.layer.ipfs.cid": "QmbSCQoNkbvuYXpjUsERkG13em9WXeSiw5m5omLUnrcTT4/foo-0.1.0.tar.gz",
+      "io.ocipfs.layer.fs.digest": "sha256:e02ebdee01b51ceb76a06a45debfb962d6484728f4c348b9ca0c8a2309830ec6"
+    }
+  }
+}
