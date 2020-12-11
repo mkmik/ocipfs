@@ -6,9 +6,10 @@ extern crate rocket;
 use anyhow::Result;
 use count_write::CountWrite;
 use err_derive::Error;
+use ocipfs::oci::*;
 use rocket::response::Redirect;
 use rocket_contrib::json::Json;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha2::{Digest as Sha2Digest, Sha256};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -88,67 +89,6 @@ enum BlobsResult {
     Tarball(Redirect),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct ImageConfig {
-    architecture: String,
-    os: String,
-    rootfs: RootFS,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct RootFS {
-    #[serde(rename = "type")]
-    _type: String,
-    diff_ids: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct Descriptor {
-    media_type: String,
-    digest: String,
-    size: u64,
-    annotations: HashMap<String, String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct LayerManifest {
-    media_type: String,
-    layer: Descriptor,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct ImageManifest {
-    schema_version: i32,
-    media_type: String,
-    config: Descriptor,
-    layers: Vec<Descriptor>,
-}
-
-impl TryFrom<&LayerManifest> for ImageConfig {
-    type Error = anyhow::Error;
-
-    fn try_from(lm: &LayerManifest) -> Result<Self, Self::Error> {
-        let tsha = lm
-            .layer
-            .annotations
-            .get("io.ocipfs.layer.fs.digest")
-            .ok_or(LayerManifestError::MissingTarDigest)?;
-
-        Ok(ImageConfig {
-            architecture: "amd64".to_string(),
-            os: "linux".to_string(),
-            rootfs: RootFS {
-                _type: "layers".to_string(),
-                diff_ids: vec![tsha.clone()],
-            },
-        })
-    }
-}
-
 impl TryFrom<&CID<'_>> for LayerManifest {
     type Error = anyhow::Error;
 
@@ -175,14 +115,6 @@ fn manifests<'a>(cid: CID, _tag: &'a str) -> Result<Json<ImageManifest>> {
     };
 
     Ok(Json(iman))
-}
-
-#[derive(Debug, Error)]
-enum LayerManifestError {
-    #[error(display = "Missing io.ocipfs.layer.ipfs.cid annotation")]
-    MissingCID,
-    #[error(display = "Missing io.ocipfs.layer.fs.digest annotation")]
-    MissingTarDigest,
 }
 
 #[derive(Debug, Error)]
