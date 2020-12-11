@@ -39,3 +39,6 @@ jobs:
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+
+      - name: Deploy to Cloud Run
+        run: gcloud run deploy ocipfs --platform=managed --region=us-central1 --image=gcr.io/mkm-cloud/ocipfs@${{ steps.docker_build.outputs.digest }}
