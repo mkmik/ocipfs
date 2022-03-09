@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1-experimental
 
 # Build Stage
-FROM rust:1.48.0 AS builder
+FROM rust:1.59.0 AS builder
 
 ENV CARGO_TARGET_DIR=/tmp/target
 ENV CARGO_HOME=/tmp/cargo
@@ -14,7 +14,7 @@ RUN mkdir /out
 RUN USER=root cargo new builder
 WORKDIR /usr/src/builder
 
-COPY rust-toolchain .
+COPY rust-toolchain.toml .
 
 RUN --mount=type=cache,target=/tmp/cargo \
     --mount=type=cache,target=/tmp/target \
