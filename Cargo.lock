@@ -572,9 +572,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.18"
+version = "0.14.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b26ae0a80afebe130861d90abf98e3814a4f28a4c6ffeb5ab8ebb2be311e0ef2"
+checksum = "42dc3c131584288d375f2d07f822b0cb012d8c6fb899a5b9fdb3cb7eb9b6004f"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -601,7 +601,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6183ddfa99b85da61a140bea0efc93fdf56ceaa041b37d553518030827f9905"
 dependencies = [
  "bytes",
- "hyper 0.14.18",
+ "hyper 0.14.19",
  "native-tls",
  "tokio",
  "tokio-native-tls",
@@ -631,9 +631,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.8.1"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f647032dfaa1f8b6dc29bd3edb7bbef4861b8b8007ebb118d6db284fd59f6ee"
+checksum = "e6012d540c5baa3589337a98ce73408de9b5a25ec9fc2c6fd6be8f0d39e0ca5a"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -908,9 +908,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b10983b38c53aebdf33f542c6275b0f58a238129d00c4ae0e6fb59738d783ca"
+checksum = "7709cef83f0c1f58f666e746a08b21e0085f7440fa6a29cc194d68aac97a4225"
 
 [[package]]
 name = "opaque-debug"
@@ -974,9 +974,9 @@ dependencies = [
 
 [[package]]
 name = "pear_codegen"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfc1c836fdc3d1ef87c348b237b5b5c4dff922156fb2d968f57734f9669768ca"
+checksum = "c0288ba5d581afbc93e2bbd931c1013584c15ecf46b1cdb927edc7abddbc8ca6"
 dependencies = [
  "proc-macro2 0.4.30",
  "quote 0.6.13",
@@ -1154,7 +1154,7 @@ dependencies = [
  "h2",
  "http",
  "http-body",
- "hyper 0.14.18",
+ "hyper 0.14.19",
  "hyper-tls",
  "ipnet",
  "js-sys",
@@ -1214,9 +1214,9 @@ dependencies = [
 
 [[package]]
 name = "rocket_contrib"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b6303dccab46dce6c7ac26c9b9d8d8cde1b19614b027c3f913be6611bff6d9b"
+checksum = "e20efbc6a211cb3df5375accf532d4186f224b623f39eca650b19b96240c596b"
 dependencies = [
  "log 0.4.17",
  "notify",
