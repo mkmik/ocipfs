@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1-experimental
 
 # Build Stage
-FROM rust:1.62.1@sha256:0cf42f1fd8d4d0510064c6aad8792a25caa5524d192bbdf38b54c8752140f4ba AS builder
+FROM rust:1.62.1@sha256:e9bf71b27c65d6852980d9c1f05cc16cbfbef4538102ac8e867645a1da3f0211 AS builder
 
 ENV CARGO_TARGET_DIR=/tmp/target
 ENV CARGO_HOME=/tmp/cargo
