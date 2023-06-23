@@ -12,6 +12,9 @@
   ],
   "includeForks": false,
   "labels": ["dependencies"],
+  "ignorePaths": [
+    "example/**"
+  ],
   "packageRules": [
     {
       "description": "Automerge trivial updates",
