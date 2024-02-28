@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/tmp/cargo \
     cp ${CARGO_TARGET_DIR}/release/${BIN} /out/
 
 # Bundle Stage
-FROM gcr.io/distroless/cc@sha256:d342e59d5dfb558ec9c2e9575a617b543782ea2fd2705eae73e6d17c8c99d303
+FROM gcr.io/distroless/cc@sha256:69703c4b74bcbbea9cdf14a5384020ade49fbd762b1186219fdbd597a4857dab
 COPY --from=builder /out/ /bin/
 ENV ROCKET_PORT=8080
 ENTRYPOINT [ "/bin/ocipfs" ]
