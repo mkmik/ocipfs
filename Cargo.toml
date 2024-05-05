@@ -14,7 +14,7 @@ err-derive = "0.3"
 reqwest = { version = "0.11", features = [ "blocking" ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.9"
+sha2 = "0.10"
 generic-array = "0.14"
 count-write = "0.1"
 [dependencies.rocket_contrib]
