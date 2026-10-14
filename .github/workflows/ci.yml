@@ -19,6 +19,7 @@ jobs:
         uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55 # v2
 
       - name: Set up Cloud SDK
+        if: github.event_name == 'push'
         uses: google-github-actions/setup-gcloud@20c93dacc1d70ddbce76c63ab32c35595345bdd1 # v0
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -26,6 +27,7 @@ jobs:
           export_default_credentials: true
 
       - name: Set up GCR
+        if: github.event_name == 'push'
         run: gcloud auth configure-docker
 
       - name: Build/push
@@ -34,11 +36,12 @@ jobs:
         with:
           platforms: linux/amd64
           # platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: gcr.io/mkm-cloud/ocipfs:latest
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
 
       - name: Deploy to Cloud Run
+        if: github.event_name == 'push'
         run: gcloud run deploy ocipfs --platform=managed --region=us-central1 --image=gcr.io/mkm-cloud/ocipfs@${{ steps.docker_build.outputs.digest }}
