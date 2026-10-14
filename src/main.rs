@@ -1,18 +1,15 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
 #[macro_use]
 extern crate rocket;
 
 use anyhow::Result;
 use count_write::CountWrite;
-use err_derive::Error;
+use thiserror::Error;
 use ocipfs::oci::*;
-use rocket::response::Redirect;
-use rocket_contrib::json::Json;
+use rocket::response::{Debug, Redirect};
+use rocket::serde::json::Json;
 use serde::Serialize;
 use sha2::{Digest as Sha2Digest, Sha256};
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::fmt;
 use std::path::PathBuf;
 
@@ -22,10 +19,10 @@ const IPFS_GATEWAY: &str = "ipfs.io";
 struct CID<'a>(&'a str);
 
 impl<'a> CID<'a> {
-    fn fetch(&'a self) -> Result<String> {
+    async fn fetch(&'a self) -> Result<String> {
         let u = format!("https://{}/ipfs/{}", IPFS_GATEWAY, self.0);
         println!("downloading from {}", &u);
-        let res = reqwest::blocking::get(&u)?.text()?;
+        let res = reqwest::get(&u).await?.text().await?;
         println!("downloaded");
         Ok(res)
     }
@@ -33,22 +30,26 @@ impl<'a> CID<'a> {
 
 #[derive(Debug, Error)]
 enum PathError {
-    #[error(display = "No last component")]
+    #[error("No last component")]
     NoLastComponent,
-    #[error(display = "No base component")]
+    #[error("No base component")]
     NoBaseComponent,
-    #[error(display = "No operation")]
+    #[error("No operation")]
     NoOp,
-    #[error(display = "No CID")]
+    #[error("No CID")]
     NoCid,
-    #[error(display = "Cannot convert to UTF-8")]
+    #[error("Cannot convert to UTF-8")]
     BadUTF8,
-    #[error(display = "Unknown operation {}", 0)]
+    #[error("Unknown operation {0}")]
     UnknownOperation(String),
 }
 
 #[get("/layer/<rest..>")]
-fn layer(rest: PathBuf) -> Result<LayerResult> {
+async fn layer(rest: PathBuf) -> Result<LayerResult, Debug<anyhow::Error>> {
+    Ok(layer_inner(rest).await?)
+}
+
+async fn layer_inner(rest: PathBuf) -> Result<LayerResult> {
     use LayerResult::*;
 
     let base = rest.parent().ok_or(PathError::NoBaseComponent)?;
@@ -69,8 +70,8 @@ fn layer(rest: PathBuf) -> Result<LayerResult> {
         .ok_or(PathError::BadUTF8)?);
 
     Ok(match op {
-        "manifests" => Manifests(manifests(cid, last)?),
-        "blobs" => Blobs(blobs(cid, last)?),
+        "manifests" => Manifests(manifests(cid, last).await?),
+        "blobs" => Blobs(blobs(cid, last).await?),
         _ => Err(PathError::UnknownOperation(op.to_string()))?,
     })
 }
@@ -89,16 +90,12 @@ enum BlobsResult {
     Tarball(Redirect),
 }
 
-impl TryFrom<&CID<'_>> for LayerManifest {
-    type Error = anyhow::Error;
-
-    fn try_from(cid: &CID<'_>) -> Result<Self, Self::Error> {
-        Ok(serde_json::from_str(&cid.fetch()?)?)
-    }
+async fn fetch_layer_manifest(cid: &CID<'_>) -> Result<LayerManifest> {
+    Ok(serde_json::from_str(&cid.fetch().await?)?)
 }
 
-fn manifests<'a>(cid: CID, _tag: &'a str) -> Result<Json<ImageManifest>> {
-    let lman = LayerManifest::try_from(&cid)?;
+async fn manifests(cid: CID<'_>, _tag: &str) -> Result<Json<ImageManifest>> {
+    let lman = fetch_layer_manifest(&cid).await?;
     println!("Manifest = {:?}", &lman);
 
     let digest = Digest::new(&ImageConfig::try_from(&lman)?)?;
@@ -119,14 +116,14 @@ fn manifests<'a>(cid: CID, _tag: &'a str) -> Result<Json<ImageManifest>> {
 
 #[derive(Debug, Error)]
 enum BlobsError {
-    #[error(display = "Unknown manifest")]
+    #[error("Unknown manifest")]
     UnknownManifest,
 }
 
-fn blobs<'a>(cid: CID, digest: &'a str) -> Result<BlobsResult> {
+async fn blobs(cid: CID<'_>, digest: &str) -> Result<BlobsResult> {
     use BlobsResult::*;
 
-    let lman = LayerManifest::try_from(&cid)?;
+    let lman = fetch_layer_manifest(&cid).await?;
     println!("Manifest = {:?}", &lman);
     if digest == lman.layer.digest {
         let lcid = lman
@@ -148,7 +145,7 @@ fn blobs<'a>(cid: CID, digest: &'a str) -> Result<BlobsResult> {
 }
 
 struct Digest {
-    hash: generic_array::GenericArray<u8, <Sha256 as Sha2Digest>::OutputSize>,
+    hash: sha2::digest::Output<Sha256>,
     size: u64,
 }
 
@@ -174,35 +171,32 @@ impl fmt::Display for Digest {
 #[get("/")]
 fn root() {}
 
-fn rocket() -> rocket::Rocket {
-    rocket::ignite().mount("/v2", routes![root, layer])
-    //rocket::ignite().mount("/v2", routes![root, manifests])
-}
-fn main() {
-    rocket().launch();
+#[launch]
+fn rocket() -> _ {
+    rocket::build().mount("/v2", routes![root, layer])
 }
 
 #[cfg(test)]
 mod test {
     use super::rocket;
     use rocket::http::Status;
-    use rocket::local::Client;
+    use rocket::local::blocking::Client;
 
     #[test]
     fn root() {
-        let client = Client::new(rocket()).expect("valid rocket instance");
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
 
-        let mut response = client.get("/v2/").dispatch();
+        let response = client.get("/v2/").dispatch();
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.body_string(), None);
+        assert_eq!(response.into_string(), None);
     }
 
     #[test]
     fn manifest() {
-        let client = Client::new(rocket()).expect("valid rocket instance");
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
 
-        let mut response = client.get("/v2/").dispatch();
+        let response = client.get("/v2/").dispatch();
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.body_string(), None);
+        assert_eq!(response.into_string(), None);
     }
 }

@@ -1,4 +1,4 @@
-use err_derive::Error;
+use thiserror::Error;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -66,8 +66,8 @@ impl TryFrom<&LayerManifest> for ImageConfig {
 
 #[derive(Debug, Error)]
 pub enum LayerManifestError {
-    #[error(display = "Missing io.ocipfs.layer.ipfs.cid annotation")]
+    #[error("Missing io.ocipfs.layer.ipfs.cid annotation")]
     MissingCID,
-    #[error(display = "Missing io.ocipfs.layer.fs.digest annotation")]
+    #[error("Missing io.ocipfs.layer.fs.digest annotation")]
     MissingTarDigest,
 }
